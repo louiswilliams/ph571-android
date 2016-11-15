@@ -2,11 +2,14 @@ package org.louiswilliams.phcontroller;
 
 import android.databinding.BaseObservable;
 import android.databinding.Bindable;
-import android.databinding.Observable;
-import android.support.v4.view.ViewPager;
+import org.louiswilliams.phcontroller.BR;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 public class CarData extends BaseObservable {
 
@@ -166,18 +169,55 @@ public class CarData extends BaseObservable {
         return values.get(uuids.get(ENGINE_FUEL));
     }
 
-    public String[] getColumns() {
-        return (String[]) uuids.keySet().toArray();
+    public String getColumns() {
+        StringBuilder output = new StringBuilder();
+        String rows[] = {
+                BATT_VOLTAGE,
+                BATT_CURRENT,
+                BATT_AMPHRS,
+                BATT_SOC,
+                BATT_TIME,
+                BATT_TEMP,
+                MOTOR_RPM,
+                MOTOR_TEMP,
+                MOTOR_CURRENT,
+                MOTOR_VOLTAGE,
+                MOTOR_STATOR,
+                ENGINE_RPM,
+                ENGINE_FUEL
+        };
+        for (int i=0; i < rows.length; i++) {
+            output.append(rows[i]);
+            if (i < rows.length - 1) {
+                output.append(',');
+            }
+        }
+        return output.toString();
     }
 
-    public String[] getRow() {
-        String row[] = new String[uuids.size()];
-
-        String cols[] = getColumns();
-        for (int i=0; i < cols.length; i++) {
-            row[i] = String.valueOf(values.get(cols[i]));
+    public String getRow() {
+        StringBuilder output = new StringBuilder();
+        Double vals[] = {
+                getBattVoltage(),
+                getBattCurrent(),
+                getBattAmpHrs(),
+                getBattSoc(),
+                getBattTimeLeft(),
+                getBattTemp(),
+                getMotorRpm(),
+                getMotorTemp(),
+                getMotorCurrent(),
+                getMotorVoltage(),
+                getMotorStatorFreq(),
+                getEngineRpm(),
+                getEngineFuelRate()
+        };
+        for (int i=0; i < vals.length; i++) {
+            output.append(vals[i]);
+            if (i < vals.length - 1) {
+                output.append(',');
+            }
         }
-
-        return row;
+        return output.toString();
     }
 }

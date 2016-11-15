@@ -15,7 +15,6 @@
         android:layout_height="wrap_content"
         android:text="@string/scan_button"
         android:id="@+id/scan_button"
-        android:enabled="false"
         />
     <ListView
         android:layout_width="match_parent"

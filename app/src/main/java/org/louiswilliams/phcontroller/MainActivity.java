@@ -35,10 +35,8 @@ import java.util.Set;
 
 public class MainActivity extends AppCompatActivity {
 
-    public static final String UART_UUID = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E";
-    public static final String TX_UUID = "6E400002-B5A3-F393-E0A9-E50E24DCCA9E";
-    public static final String RX_UUID = "6E400003-B5A3-F393-E0A9-E50E24DCCA9E";
-    public static final String PH571_UUID = "6E401000-B5A3-F393-E0A9-E50E24DCCA9E";
+    public  static final String ADAFRUIT_ADDR = "C2:89:50:70:61:48";
+
     public static final String TAG = MainActivity.class.getSimpleName();
 
     private static final int REQUEST_ENABLE_BT = 1;
@@ -61,6 +59,10 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void run() {
                     mDevices.add(device);
+                    if (device.getAddress().equalsIgnoreCase(ADAFRUIT_ADDR)) {
+                        scanLeDevices(false);
+                        connectToDevice(device);
+                    }
                 }
             });
         }
@@ -90,9 +92,7 @@ public class MainActivity extends AppCompatActivity {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 // Get device and start activity to connect and display GATT data
                 BluetoothDevice device = (BluetoothDevice) parent.getItemAtPosition(position);
-                Intent i = new Intent(MainActivity.this, DisplayActivity.class);
-                i.putExtra("BTLE_DEVICE", device);
-                startActivity(i);
+                connectToDevice(device);
             }
         });
 
@@ -103,7 +103,7 @@ public class MainActivity extends AppCompatActivity {
         scanButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                scanLeDevices(true);
+                scanLeDevices(!mScanning);
             }
         });
 
@@ -132,8 +132,6 @@ public class MainActivity extends AppCompatActivity {
                 // app-defined int constant. The callback method gets the
                 // result of the request.
             }
-        } else {
-            scanButton.setEnabled(true);
         }
 
         // Request to enable Bluetooth if not enabled
@@ -144,6 +142,8 @@ public class MainActivity extends AppCompatActivity {
         if (mBluetoothAdapter == null || !mBluetoothAdapter.isEnabled()) {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+        } else {
+            scanLeDevices(true);
         }
 
         // ATTENTION: This was auto-generated to implement the App Indexing API.
@@ -175,11 +175,7 @@ public class MainActivity extends AppCompatActivity {
                     // permission denied, boo! Disable the
                     // functionality that depends on this permission.
                 }
-                return;
             }
-
-            // other 'case' lines to check for other
-            // permissions this app might request
         }
     }
 
@@ -192,8 +188,7 @@ public class MainActivity extends AppCompatActivity {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    scanButton.setText("Scanning");
-                    scanButton.setEnabled(false);
+                    scanButton.setText("Stop Scanning");
                 }
             });
 
@@ -211,7 +206,6 @@ public class MainActivity extends AppCompatActivity {
                             mDeviceAdapter.addAll(mDevices);
                             mDeviceAdapter.notifyDataSetChanged();
                             scanButton.setText(R.string.scan_button);
-                            scanButton.setEnabled(true);
                         }
                     });
 
@@ -228,6 +222,12 @@ public class MainActivity extends AppCompatActivity {
             mScanning = false;
             mBluetoothAdapter.stopLeScan(mLeScanCallback);
         }
+    }
+
+    private void connectToDevice(BluetoothDevice device) {
+        Intent i = new Intent(MainActivity.this, DisplayActivity.class);
+        i.putExtra("BTLE_DEVICE", device);
+        startActivity(i);
     }
 
     /**

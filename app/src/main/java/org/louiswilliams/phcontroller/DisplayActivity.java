@@ -1,5 +1,6 @@
 package org.louiswilliams.phcontroller;
 
+import android.Manifest;
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
@@ -10,10 +11,14 @@ import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothProfile;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.databinding.DataBindingUtil;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -24,11 +29,18 @@ import android.widget.Toast;
 
 import org.louiswilliams.phcontroller.databinding.ActivityDisplayBinding;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.Date;
 import java.util.Queue;
 import java.util.Timer;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class DisplayActivity extends AppCompatActivity {
 
@@ -38,9 +50,11 @@ public class DisplayActivity extends AppCompatActivity {
     private CarData carData = new CarData();
     private BluetoothGattService carService;
     private AsyncTask<Void, Void, Boolean> dataCollectionTask;
-    private AsyncTask<Void, Void, Void> logTask;
+    private ScheduledExecutorService logService;
     private Queue<BluetoothGattDescriptor> descriptorQueue;
     private boolean logging;
+
+    private static final int PERMISSION_REQUEST_WRITE = 456;
 
     public static final String PH517_UUID = "B34A1000-2303-47C5-83D5-868362DEEBA6";
     public static final String CCCD = "00002902-0000-1000-8000-00805F9B34FB";
@@ -193,15 +207,90 @@ public class DisplayActivity extends AppCompatActivity {
     }
 
     void logCarData() {
+        logService = Executors.newSingleThreadScheduledExecutor();
+        final String logFileName = String.format("data-%d.csv", new Date().getTime());
+        File dataDir = new File(Environment.getExternalStorageDirectory(), "ph571");
+        dataDir.mkdir();
+        final File logFile = new File(dataDir, logFileName);
+        final FileOutputStream outputStream;
 
-
-        while (logging) {
-
+        try {
+            outputStream = new FileOutputStream(logFile);
+        } catch (FileNotFoundException e) {
+            Log.w(TAG, "Could not log file: " + e.getMessage());
+            return;
         }
-        if (logging) {
 
-        } else {
-            // Close file
+        // Write header columns
+        String headers = carData.getColumns();
+        try {
+            outputStream.write(headers.getBytes());
+            outputStream.write('\n');
+        } catch (IOException e) {
+            Log.w(TAG, "Error logging data: " + e.getMessage());
+        }
+
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(DisplayActivity.this, "Logging to: " + logFileName, Toast.LENGTH_SHORT).show();
+            }
+        });
+        // Log every 0.5 second
+        logService.scheduleAtFixedRate(new Runnable() {
+            @Override
+            public void run() {
+                if (logging) {
+                    try {
+                        outputStream.write(carData.getRow().getBytes());
+                        outputStream.write('\n');
+                    } catch (IOException e) {
+                        Log.w(TAG, "Error logging data: " + e.getMessage());
+                    }
+                } else {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(DisplayActivity.this, "File saved as: " + logFile.getAbsolutePath(), Toast.LENGTH_LONG).show();
+                        }
+                    });
+                    try {
+                        outputStream.close();
+                        logService.shutdown();
+                    } catch (IOException e) {
+                        Log.w(TAG, "Error closing file: " + e.getMessage());
+                    }
+                }
+            }
+        }, 0, 500, TimeUnit.MILLISECONDS);
+    }
+
+    private void logStart() {
+        final Button logButton = (Button) findViewById(R.id.log_button);
+        logging = true;
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                logButton.setText(R.string.stop_logging);
+            }
+        });
+        logCarData();
+    }
+
+    private void logStop() {
+        final Button logButton = (Button) findViewById(R.id.log_button);
+        logging = false;
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                logButton.setText(R.string.start_logging);
+            }
+        });
+        try {
+            logService.awaitTermination(2, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Log.w(TAG, "Could not terminate logging service");
+            logService.shutdownNow();
         }
     }
 
@@ -225,32 +314,60 @@ public class DisplayActivity extends AppCompatActivity {
             }
         });
 
+
         final Button logButton = (Button) findViewById(R.id.log_button);
         logButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (logTask != null){
-                    logTask.cancel(false);
-                }
-                if (logging) {
-                    logging = false;
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            logButton.setEnabled(true);
-                        }
-                    });
+
+                if (ContextCompat.checkSelfPermission(DisplayActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                        != PackageManager.PERMISSION_GRANTED) {
+                    // Should we show an explanation?
+                    if (ActivityCompat.shouldShowRequestPermissionRationale(DisplayActivity.this,
+                            Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+
+                    } else {
+                        ActivityCompat.requestPermissions(DisplayActivity.this,
+                                new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                                PERMISSION_REQUEST_WRITE);
+                    }
+
+                } else if (logging) {
+                    logStop();
                 } else {
-                    logging = true;
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            logButton.setEnabled(false);
-                        }
-                    });
+                    logStart();
                 }
             }
         });
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case PERMISSION_REQUEST_WRITE: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                    // permission was granted, yay! Do the
+                    // contacts-related task you need to do
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            final Button scanButton = (Button) findViewById(R.id.scan_button);
+                            assert scanButton != null;
+                            scanButton.setEnabled(true);
+                        }
+                    });
+                } else {
+
+                    logStart();
+                    // permission denied, boo! Disable the
+                    // functionality that depends on this permission.
+                }
+            }
+        }
     }
 
     @Override
