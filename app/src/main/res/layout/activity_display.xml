@@ -192,13 +192,28 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@{carData.ENGINE_FUEL}"
+                android:text="@{carData.ENGINE_PULSES}"
                 />
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@{Double.toString(carData.engineFuelRate)}"/>
+                android:text="@{Double.toString(carData.enginePulses)}"/>
         </LinearLayout>
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@{carData.ENGINE_TIMEON}"
+                />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@{Double.toString(carData.engineTimeOn)}"/>
+        </LinearLayout>
+
 
         <Button
             android:id="@+id/log_button"

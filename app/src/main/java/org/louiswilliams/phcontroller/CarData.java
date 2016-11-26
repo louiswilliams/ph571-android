@@ -25,7 +25,8 @@ public class CarData extends BaseObservable {
     public static final String MOTOR_VOLTAGE = "Motor Voltage (V)";
     public static final String MOTOR_STATOR = "Stator Frequency (Hz)";
     public static final String ENGINE_RPM = "Engine RPM (cycles/m)";
-    public static final String ENGINE_FUEL = "Engine Fuel (?)";
+    public static final String ENGINE_PULSES = "Engine Pulses";
+    public static final String ENGINE_TIMEON = "Engine Time on (ms)";
     public static final String MODE = "Mode";
 
     private static Map<String, String> uuids;
@@ -49,8 +50,9 @@ public class CarData extends BaseObservable {
             uuids.put(MOTOR_VOLTAGE, "0000100A-0000-1000-8000-00805F9B34FB");
             uuids.put(MOTOR_STATOR, "0000100B-0000-1000-8000-00805F9B34FB");
             uuids.put(ENGINE_RPM, "0000100C-0000-1000-8000-00805F9B34FB");
-            uuids.put(ENGINE_FUEL, "0000100D-0000-1000-8000-00805F9B34FB");
-            uuids.put(MODE, "0000100E-0000-1000-8000-00805F9B34FB");
+            uuids.put(ENGINE_PULSES, "0000100D-0000-1000-8000-00805F9B34FB");
+            uuids.put(ENGINE_TIMEON, "0000100E-0000-1000-8000-00805F9B34FB");
+            uuids.put(MODE, "0000100F-0000-1000-8000-00805F9B34FB");
         }
         if (brIds == null) {
             brIds = new HashMap<>();
@@ -67,7 +69,9 @@ public class CarData extends BaseObservable {
             brIds.put(uuids.get(MOTOR_VOLTAGE), BR.motorVoltage);
             brIds.put(uuids.get(MOTOR_STATOR), BR.motorStatorFreq);
             brIds.put(uuids.get(ENGINE_RPM), BR.engineRpm);
-            brIds.put(uuids.get(ENGINE_FUEL), BR.engineFuelRate);
+            brIds.put(uuids.get(ENGINE_PULSES), BR.enginePulses);
+            brIds.put(uuids.get(ENGINE_TIMEON), BR.engineTimeOn);
+
 //            brIds.put(uuids.get(MODE), BR.mode);
 
         }
@@ -84,7 +88,8 @@ public class CarData extends BaseObservable {
         values.put(uuids.get(MOTOR_VOLTAGE), 0);
         values.put(uuids.get(MOTOR_STATOR), 0);
         values.put(uuids.get(ENGINE_RPM), 0);
-        values.put(uuids.get(ENGINE_FUEL), 0);
+        values.put(uuids.get(ENGINE_PULSES), 0);
+        values.put(uuids.get(ENGINE_TIMEON), 0);
         values.put(uuids.get(MODE), 0);
     }
 
@@ -165,8 +170,13 @@ public class CarData extends BaseObservable {
     }
 
     @Bindable
-    public double getEngineFuelRate() {
-        return values.get(uuids.get(ENGINE_FUEL));
+    public double getEnginePulses() {
+        return values.get(uuids.get(ENGINE_PULSES));
+    }
+
+    @Bindable
+    public double getEngineTimeOn() {
+        return values.get(uuids.get(ENGINE_TIMEON));
     }
 
     public String getColumns() {
@@ -184,7 +194,8 @@ public class CarData extends BaseObservable {
                 MOTOR_VOLTAGE,
                 MOTOR_STATOR,
                 ENGINE_RPM,
-                ENGINE_FUEL
+                ENGINE_PULSES,
+                ENGINE_TIMEON
         };
         for (int i=0; i < rows.length; i++) {
             output.append(rows[i]);
@@ -210,7 +221,8 @@ public class CarData extends BaseObservable {
                 getMotorVoltage(),
                 getMotorStatorFreq(),
                 getEngineRpm(),
-                getEngineFuelRate()
+                getEnginePulses(),
+                getEngineTimeOn()
         };
         for (int i=0; i < vals.length; i++) {
             output.append(vals[i]);
