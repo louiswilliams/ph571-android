@@ -19,11 +19,13 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.content.res.ResourcesCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 
@@ -49,7 +51,6 @@ public class DisplayActivity extends AppCompatActivity {
     private BluetoothGatt mBluetoothGatt;
     private CarData carData = new CarData();
     private BluetoothGattService carService;
-    private AsyncTask<Void, Void, Boolean> dataCollectionTask;
     private ScheduledExecutorService logService;
     private Queue<BluetoothGattDescriptor> descriptorQueue;
     private boolean logging;
@@ -65,6 +66,7 @@ public class DisplayActivity extends AppCompatActivity {
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 mProgressDialog.dismiss();
                 Log.i(TAG, "Connected to GATT server");
+                setBtConnectedIndicator(true);
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
 
                     if (mBluetoothGatt.requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH)) {
@@ -78,7 +80,7 @@ public class DisplayActivity extends AppCompatActivity {
                 if (mProgressDialog != null)
                     mProgressDialog.dismiss();
                 Log.i(TAG, "Disconnected from GATT server");
-                finish();
+                setBtConnectedIndicator(false);
             }
         }
 
@@ -95,9 +97,7 @@ public class DisplayActivity extends AppCompatActivity {
                 }
                 if (carService != null) {
                     Log.i(TAG, "Found Car Service");
-                    if (dataCollectionTask != null) {
-                        dataCollectionTask.cancel(true);
-                    }
+
                     for (BluetoothGattCharacteristic characteristic : carService.getCharacteristics()) {
                         Log.i(TAG, "Characteristic: " + characteristic.getUuid());
                     }
@@ -125,17 +125,6 @@ public class DisplayActivity extends AppCompatActivity {
                         Log.i(TAG, "Failed to initiate writing notification descriptor");
                     }
 
-//                    dataCollectionTask = new AsyncTask<Void, Void, Boolean>() {
-//                        @Override
-//                        protected Boolean doInBackground(Void... params) {
-//                            boolean success = true;
-//                            while (success) {
-//                                success =  collectData();
-//                            }
-//                            return success;
-//                        }
-//                    };
-//                    dataCollectionTask.execute();
                 } else {
                     runOnUiThread(new Runnable() {
                         @Override
@@ -172,7 +161,7 @@ public class DisplayActivity extends AppCompatActivity {
         public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor,
                                       int status) {
             if (status != BluetoothGatt.GATT_SUCCESS) {
-                Log.w(TAG, "Failed to write to descriptor " +descriptor.getUuid().toString() + " of " + descriptor.getCharacteristic().getUuid().toString() + ": " + status);
+                Log.w(TAG, "Failed to write to descriptor " + descriptor.getUuid().toString() + " of " + descriptor.getCharacteristic().getUuid().toString() + ": " + status);
             }
 
             /* Dequeue and write one */
@@ -188,7 +177,7 @@ public class DisplayActivity extends AppCompatActivity {
 
     boolean collectData() {
         boolean success = true;
-        if (carService != null ) {
+        if (carService != null) {
             /* Collect all the characteristic data */
             for (String name : carData.getUuids().keySet()) {
                 String uuid = carData.getUuids().get(name);
@@ -201,7 +190,7 @@ public class DisplayActivity extends AppCompatActivity {
             }
         } else {
             Log.w(TAG, "Sanity check failed. Car service not found yet?");
-            success =  false;
+            success = false;
         }
         return success;
     }
@@ -299,18 +288,17 @@ public class DisplayActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         ActivityDisplayBinding binding = DataBindingUtil.setContentView(DisplayActivity.this, R.layout.activity_display);
 
-        binding.setCarData(carData);
+//        binding.setCarData(carData);
 
         Intent intent = getIntent();
         BluetoothDevice device = intent.getParcelableExtra("BTLE_DEVICE");
         descriptorQueue = new ConcurrentLinkedQueue<>();
-        mBluetoothGatt = device.connectGatt(this, true, mGattCallback);
+        mBluetoothGatt = device.connectGatt(this, false, mGattCallback);
 
         mProgressDialog = ProgressDialog.show(DisplayActivity.this, "", "Connecting...", true, true, new DialogInterface.OnCancelListener() {
             @Override
             public void onCancel(DialogInterface dialog) {
                 mBluetoothGatt.disconnect();
-                finish();
             }
         });
 
@@ -370,13 +358,25 @@ public class DisplayActivity extends AppCompatActivity {
         }
     }
 
+    private void setBtConnectedIndicator(boolean connected) {
+        ImageView indicator = (ImageView) findViewById(R.id.bt_status);
+        if (indicator != null) {
+            if (connected) {
+                indicator.setImageDrawable(ResourcesCompat.getDrawable(getResources(), R.drawable.bt_status_connected, null));
+            } else {
+                indicator.setImageDrawable(ResourcesCompat.getDrawable(getResources(), R.drawable.bt_status_disconnected, null));
+            }
+        }
+    }
+
     @Override
     protected void onDestroy() {
         if (mBluetoothGatt != null) {
             mBluetoothGatt.close();
+            setBtConnectedIndicator(false);
         }
-        if (dataCollectionTask != null && !dataCollectionTask.isCancelled()) {
-            dataCollectionTask.cancel(true);
+        if (mProgressDialog != null && mProgressDialog.isShowing()) {
+            mProgressDialog.dismiss();
         }
         super.onDestroy();
     }

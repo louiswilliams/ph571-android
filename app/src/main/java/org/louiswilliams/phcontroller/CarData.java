@@ -156,7 +156,7 @@ public class CarData extends BaseObservable {
 
     @Bindable
     public double getMotorVoltage() {
-        return values.get(uuids.get(MOTOR_CURRENT)) / 10.0;
+        return values.get(uuids.get(MOTOR_VOLTAGE)) / 10.0;
     }
 
     @Bindable
