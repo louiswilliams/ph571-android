@@ -36,12 +36,14 @@ import java.util.Set;
 public class MainActivity extends AppCompatActivity {
 
     public  static final String ADAFRUIT_ADDR = "C2:89:50:70:61:48";
+    public static final boolean SIMULATE = true;
 
     public static final String TAG = MainActivity.class.getSimpleName();
 
     private static final int REQUEST_ENABLE_BT = 1;
     private static final int SCAN_PERIOD = 5000;
     private static final int PERMISSION_REQUEST_LOCATION = 123;
+
 
     private DeviceListAdapter mDeviceAdapter;
     private Set<BluetoothDevice> mDevices = new HashSet<>();
@@ -104,6 +106,14 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 scanLeDevices(!mScanning);
+            }
+        });
+
+        final Button simulateButton = (Button) findViewById(R.id.simulate_button);
+        simulateButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                connectToDevice(null);
             }
         });
 

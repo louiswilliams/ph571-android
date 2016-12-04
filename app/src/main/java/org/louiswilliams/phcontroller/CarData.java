@@ -4,6 +4,7 @@ import android.databinding.BaseObservable;
 import android.databinding.Bindable;
 import org.louiswilliams.phcontroller.BR;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -25,6 +26,7 @@ public class CarData extends BaseObservable {
     public static final String MOTOR_VOLTAGE = "Motor Voltage (V)";
     public static final String MOTOR_STATOR = "Stator Frequency (Hz)";
     public static final String ENGINE_RPM = "Engine RPM (cycles/m)";
+    public static final String CAR_SPEED = "Speed (MPH)";
     public static final String ENGINE_PULSES = "Engine Pulses";
     public static final String ENGINE_TIMEON = "Engine Time on (ms)";
     public static final String MODE = "Mode";
@@ -32,9 +34,16 @@ public class CarData extends BaseObservable {
     private static Map<String, String> uuids;
     private static Map<String, Integer> brIds;
     private Map<String, Integer> values;
+    private Map<String, CarDataListener> dataListeners;
+
+    public interface CarDataListener {
+        void onDataChange(double vaulue);
+    }
+
 
     public CarData() {
         values = new HashMap<>();
+        dataListeners = new HashMap<>();
         if (uuids == null) {
             uuids = new HashMap<>();
 
@@ -105,8 +114,25 @@ public class CarData extends BaseObservable {
         values.put(uuid.toUpperCase(), value);
         Integer id = brIds.get(uuid.toUpperCase());
         if (id != null) {
+            // Update any listeners
+            CarDataListener listener = dataListeners.get(uuid);
+            if (listener != null) {
+                listener.onDataChange(value);
+            }
             notifyPropertyChanged(id);
+            // I'm sorry about this code
+            if (id == BR.motorRpm) {
+                notifyPropertyChanged(BR.carSpeed);
+            }
         }
+    }
+
+    void setDataListener(String name, CarDataListener listener) {
+        dataListeners.put(uuids.get(name), listener);
+    }
+
+    void removeDataListener(String name, CarDataListener listener) {
+        dataListeners.remove(uuids.get(name));
     }
 
     @Bindable
@@ -145,6 +171,11 @@ public class CarData extends BaseObservable {
     }
 
     @Bindable
+    public double getCarSpeed() {
+        return 0.0105378* getMotorRpm();
+    }
+
+    @Bindable
     public double getMotorTemp() {
         return values.get(uuids.get(MOTOR_TEMP))- 40;
     }
@@ -177,6 +208,15 @@ public class CarData extends BaseObservable {
     @Bindable
     public double getEngineTimeOn() {
         return values.get(uuids.get(ENGINE_TIMEON));
+    }
+
+    public String format(double d, int places) {
+        String fmt = "0.";
+        for (int i=0; i<places; i++) {
+            fmt += "0";
+        }
+        DecimalFormat decimalFormat = new DecimalFormat(fmt);
+        return decimalFormat.format(d);
     }
 
     public String getColumns() {

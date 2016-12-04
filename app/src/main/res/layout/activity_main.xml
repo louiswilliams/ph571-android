@@ -12,13 +12,20 @@
 
     <Button
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="50dp"
         android:text="@string/scan_button"
         android:id="@+id/scan_button"
         />
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:text="Simulate"
+        android:id="@+id/simulate_button"
+        />
     <ListView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:id="@+id/le_device_list"
         />
+
 </LinearLayout>

@@ -12,24 +12,19 @@ import android.bluetooth.BluetoothProfile;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.databinding.DataBindingUtil;
-import android.os.AsyncTask;
+import android.databinding.BindingAdapter;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.res.ResourcesCompat;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
-
-
-import org.louiswilliams.phcontroller.databinding.ActivityDisplayBinding;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -37,19 +32,18 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Date;
 import java.util.Queue;
-import java.util.Timer;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-public class DisplayActivity extends AppCompatActivity {
+public class DisplayActivity extends FragmentActivity {
 
     private static final String TAG = DisplayActivity.class.getSimpleName();
     private ProgressDialog mProgressDialog;
     private BluetoothGatt mBluetoothGatt;
-    private CarData carData = new CarData();
+    private CarData carData;
     private BluetoothGattService carService;
     private ScheduledExecutorService logService;
     private Queue<BluetoothGattDescriptor> descriptorQueue;
@@ -175,24 +169,46 @@ public class DisplayActivity extends AppCompatActivity {
 
     };
 
-    boolean collectData() {
-        boolean success = true;
-        if (carService != null) {
-            /* Collect all the characteristic data */
-            for (String name : carData.getUuids().keySet()) {
-                String uuid = carData.getUuids().get(name);
-                BluetoothGattCharacteristic characteristic = carService.getCharacteristic(UUID.fromString(uuid));
-                if (characteristic != null) {
-                    mBluetoothGatt.readCharacteristic(characteristic);
+    private final View.OnClickListener onLogButtonListener =  new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+
+            if (ContextCompat.checkSelfPermission(DisplayActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED) {
+                // Should we show an explanation?
+                if (ActivityCompat.shouldShowRequestPermissionRationale(DisplayActivity.this,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                    // Don't show rationale
                 } else {
-//                    Log.w(TAG, "Characteristic " + uuid + " not found");
+                    ActivityCompat.requestPermissions(DisplayActivity.this,
+                            new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                            PERMISSION_REQUEST_WRITE);
                 }
+
+            } else if (logging) {
+                logStop();
+            } else {
+                logStart();
             }
-        } else {
-            Log.w(TAG, "Sanity check failed. Car service not found yet?");
-            success = false;
         }
-        return success;
+    };
+
+    private  final View.OnClickListener onAuxButtonListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            AuxFragment auxFragment = new AuxFragment();
+
+            getSupportFragmentManager().beginTransaction().replace(R.id.display_frame, auxFragment)
+                    .addToBackStack(null).commit();
+        }
+    };
+
+    public View.OnClickListener getOnLogButtonListener() {
+        return onLogButtonListener;
+    }
+
+    public View.OnClickListener getOnAuxButtonListener() {
+        return onAuxButtonListener  ;
     }
 
     void logCarData() {
@@ -286,47 +302,43 @@ public class DisplayActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        ActivityDisplayBinding binding = DataBindingUtil.setContentView(DisplayActivity.this, R.layout.activity_display);
+        setContentView(R.layout.activity_display);
 
-//        binding.setCarData(carData);
+        descriptorQueue = new ConcurrentLinkedQueue<>();
+
 
         Intent intent = getIntent();
         BluetoothDevice device = intent.getParcelableExtra("BTLE_DEVICE");
-        descriptorQueue = new ConcurrentLinkedQueue<>();
-        mBluetoothGatt = device.connectGatt(this, false, mGattCallback);
+        if (device != null) {
+            carData = new CarData();
+            mBluetoothGatt = device.connectGatt(this, false, mGattCallback);
 
-        mProgressDialog = ProgressDialog.show(DisplayActivity.this, "", "Connecting...", true, true, new DialogInterface.OnCancelListener() {
-            @Override
-            public void onCancel(DialogInterface dialog) {
-                mBluetoothGatt.disconnect();
-            }
-        });
-
-
-        final Button logButton = (Button) findViewById(R.id.log_button);
-        logButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                if (ContextCompat.checkSelfPermission(DisplayActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                        != PackageManager.PERMISSION_GRANTED) {
-                    // Should we show an explanation?
-                    if (ActivityCompat.shouldShowRequestPermissionRationale(DisplayActivity.this,
-                            Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-
-                    } else {
-                        ActivityCompat.requestPermissions(DisplayActivity.this,
-                                new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                                PERMISSION_REQUEST_WRITE);
-                    }
-
-                } else if (logging) {
-                    logStop();
-                } else {
-                    logStart();
+            mProgressDialog = ProgressDialog.show(DisplayActivity.this, "", "Connecting...", true, true, new DialogInterface.OnCancelListener() {
+                @Override
+                public void onCancel(DialogInterface dialog) {
+                    mBluetoothGatt.disconnect();
                 }
+            });
+
+        } else {
+            // If the device is null, then simulate the car data
+            carData = new CarDataSim();
+            ((CarDataSim) carData).run(50);
+            Toast.makeText(this, "Simulating data...", Toast.LENGTH_SHORT).show();
+
+            setBtConnectedIndicator(true);
+        }
+
+        // Set fragment to console fragment
+        if (findViewById(R.id.display_frame) != null) {
+            if (savedInstanceState != null) {
+                return;
             }
-        });
+
+            ConsoleFragment consoleFragment = new ConsoleFragment();
+            getSupportFragmentManager().beginTransaction().add(R.id.display_frame, consoleFragment).commit();
+        }
+
     }
 
     @Override
@@ -358,15 +370,24 @@ public class DisplayActivity extends AppCompatActivity {
         }
     }
 
-    private void setBtConnectedIndicator(boolean connected) {
-        ImageView indicator = (ImageView) findViewById(R.id.bt_status);
+    private void setBtConnectedIndicator(final boolean connected) {
+        final ImageView indicator = (ImageView) findViewById(R.id.bt_status);
         if (indicator != null) {
-            if (connected) {
-                indicator.setImageDrawable(ResourcesCompat.getDrawable(getResources(), R.drawable.bt_status_connected, null));
-            } else {
-                indicator.setImageDrawable(ResourcesCompat.getDrawable(getResources(), R.drawable.bt_status_disconnected, null));
-            }
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (connected) {
+                        indicator.setImageDrawable(ResourcesCompat.getDrawable(getResources(), R.drawable.bt_status_connected, null));
+                    } else {
+                        indicator.setImageDrawable(ResourcesCompat.getDrawable(getResources(), R.drawable.bt_status_disconnected, null));
+                    }
+                }
+            });
         }
+    }
+
+    public CarData getCarData() {
+        return carData;
     }
 
     @Override
@@ -377,6 +398,9 @@ public class DisplayActivity extends AppCompatActivity {
         }
         if (mProgressDialog != null && mProgressDialog.isShowing()) {
             mProgressDialog.dismiss();
+        }
+        if (carData instanceof CarDataSim) {
+            ((CarDataSim)carData).stop();
         }
         super.onDestroy();
     }

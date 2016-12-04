@@ -1,0 +1,375 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+        <variable name="carData" type="org.louiswilliams.phcontroller.CarData" />
+    </data>
+
+
+        <RelativeLayout
+        android:id="@+id/content_display"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingBottom="@dimen/activity_vertical_margin"
+        android:paddingLeft="@dimen/activity_horizontal_margin"
+        android:paddingRight="@dimen/activity_horizontal_margin"
+        android:paddingTop="@dimen/activity_vertical_margin"
+        tools:context="org.louiswilliams.phcontroller.DisplayActivity">
+
+        <ImageView
+            android:id="@+id/bt_status"
+            android:src="@drawable/bt_status_disconnected"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentLeft="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <LinearLayout
+            android:id="@+id/speedometer"
+            android:layout_centerInParent="true"
+            android:layout_alignParentTop="true"
+            android:layout_marginTop="-20dp"
+            android:paddingEnd="30dp"
+            android:clipToPadding="false"
+            android:orientation="horizontal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+            <TextView
+                android:text="@{carData.format(carData.carSpeed, 1)}"
+                android:textSize="150dp"
+                android:textAlignment="viewEnd"
+                android:layout_width="300dp"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="10dp"/>
+            <TextView
+                android:text="MPH"
+                android:textSize="15dp"
+                android:layout_gravity="center"
+                android:layout_marginTop="10dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <!-- Motor Current Gauge -->
+        <LinearLayout
+            android:id="@+id/motor_current_guage"
+            android:orientation="vertical"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="-10dp"
+            android:layout_below="@id/speedometer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+            <LinearLayout
+                android:orientation="horizontal"
+                android:layout_width="wrap_content"
+                android:layout_height="30dp">
+                <ProgressBar
+                    android:id="@+id/current_negative"
+                    android:indeterminate="false"
+                    android:progressDrawable="@drawable/motor_current_neg_progress"
+                    style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                    android:max="100"
+                    android:progress="100"
+                    android:layout_width="100dp"
+                    android:layout_marginTop="5dp"
+                    android:layout_height="10dp" />
+
+                <ProgressBar
+                    android:id="@+id/current_positive"
+                    android:indeterminate="false"
+                    android:progressDrawable="@drawable/motor_current_pos_progress"
+                    style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                    android:max="300"
+                    android:progress="0"
+                    android:layout_marginTop="5dp"
+                    android:layout_width="300dp"
+                    android:layout_height="10dp" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_marginTop="-15dp"
+                android:orientation="horizontal"
+                android:gravity="center_horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:id="@+id/motor_current_value"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:width="100dp"
+                    android:gravity="end"
+                    android:textSize="36dp"
+                    android:text="@{carData.format(carData.battCurrent, 2)}"
+                    />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:textSize="12dp"
+                    android:text="Amps"/>
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Gauges -->
+        <LinearLayout
+            android:id="@+id/dial_gauges"
+            android:layout_below="@id/motor_current_guage"
+            android:layout_alignParentStart="true"
+            android:layout_marginTop="15dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <!-- RPM Gauge -->
+            <RelativeLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+                <pl.pawelkleczkowski.customgauge.CustomGauge
+                    android:id="@+id/engine_rpm_gauge"
+                    android:layout_width="250dp"
+                    android:layout_height="250dp"
+                    android:padding="10dp"
+                    app:gaugePointStartColor="#911818"
+                    app:gaugePointEndColor="#ea2626"
+                    app:gaugeEndValue="5000"
+                    app:gaugeStartAngle="135"
+                    app:gaugeStartValue="0"
+                    app:gaugeStrokeCap="ROUND"
+                    app:gaugeStrokeColor="#CCCCCC"
+                    app:gaugeStrokeWidth="10dp"
+                    app:gaugeSweepAngle="270" />
+
+                <LinearLayout
+                    android:orientation="vertical"
+                    android:layout_above="@id/engine_rpm_gauge"
+                    android:layout_marginStart="60dp"
+                    android:layout_marginBottom="-180dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:id="@+id/engine_rpm_value"
+                        android:text="@{carData.format(carData.engineRpm/1000, 1)}"
+                        android:textSize="80dp"
+                        android:layout_width="115dp"
+                        android:gravity="end"
+                        android:layout_height="wrap_content" />
+
+                    <TextView
+                        android:text="x1000 RPM"
+                        android:textSize="14dp"
+                        android:layout_gravity="end"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                    <TextView
+                        android:text="ENGINE"
+                        android:textSize="14dp"
+                        android:layout_gravity="end"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+
+                </LinearLayout>
+
+            </RelativeLayout>
+
+            <!-- Batt Gauge -->
+            <RelativeLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+
+                <pl.pawelkleczkowski.customgauge.CustomGauge
+                    android:id="@+id/motor_rpm_gauge"
+                    android:layout_width="250dp"
+                    android:layout_height="250dp"
+                    android:layout_alignParentEnd="true"
+                    android:padding="10dp"
+                    app:gaugeEndValue="8000"
+                    app:gaugePointStartColor="#0079b1"
+                    app:gaugePointEndColor="#00aeff"
+                    app:gaugeStartAngle="135"
+                    app:gaugeStartValue="0"
+                    app:gaugeStrokeCap="ROUND"
+                    app:gaugeStrokeColor="#CCCCCC"
+                    app:gaugeStrokeWidth="10dp"
+                    app:gaugeSweepAngle="270" />
+
+                <LinearLayout
+                    android:orientation="vertical"
+                    android:layout_above="@id/motor_rpm_gauge"
+                    android:layout_alignParentEnd="true"
+                    android:layout_marginEnd="70dp"
+                    android:layout_marginBottom="-180dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:id="@+id/motor_rpm_value"
+                        android:layout_above="@+id/motor_rpm_gauge"
+                        android:text="@{carData.format(carData.motorRpm/1000, 1)}"
+                        android:textSize="80dp"
+                        android:layout_width="115dp"
+                        android:gravity="end"
+                        android:layout_height="wrap_content" />
+
+                    <TextView
+                        android:text="x1000 RPM"
+                        android:textSize="14dp"
+                        android:layout_gravity="end"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                    <TextView
+                        android:text="ELECTRIC MOTOR"
+                        android:textSize="14dp"
+                        android:layout_gravity="end"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                </LinearLayout>
+
+            </RelativeLayout>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/drive_mode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:layout_below="@+id/dial_gauges">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="45dp"
+                android:text="Sport"
+                />
+            <LinearLayout
+                android:orientation="horizontal"
+                android:layout_marginTop="20dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+
+                <ImageButton
+                    android:layout_marginStart="30dp"
+                    android:layout_marginEnd="30dp"
+                    android:src="@drawable/button_white"
+                    android:background="#00000000"
+                    android:enabled="false"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:id="@+id/button_white" />
+
+                <ImageButton
+                    android:layout_marginEnd="30dp"
+                    android:layout_marginStart="30dp"
+                    android:src="@drawable/button_red"
+                    android:background="#00000000"
+                    android:enabled="true"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:id="@+id/button_red" />
+
+                <ImageButton
+                    android:layout_marginEnd="30dp"
+                    android:layout_marginStart="30dp"
+                    android:src="@drawable/button_green"
+                    android:background="#00000000"
+                    android:enabled="false"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:id="@+id/button_green" />
+
+                <ImageButton
+                    android:layout_marginEnd="30dp"
+                    android:layout_marginStart="30dp"
+                    android:src="@drawable/button_blue"
+                    android:background="#00000000"
+                    android:enabled="false"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:id="@+id/button_blue" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <RelativeLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:layout_below="@+id/drive_mode"
+            android:layout_alignParentStart="true">
+
+            <pl.pawelkleczkowski.customgauge.CustomGauge
+                android:id="@+id/batt_gauge"
+                android:layout_width="150dp"
+                android:layout_height="150dp"
+                android:layout_alignParentEnd="true"
+                android:padding="10dp"
+                app:gaugeEndValue="8000"
+                app:gaugePointEndColor="#0fdc0f"
+                app:gaugePointStartColor="#df1212"
+                app:gaugeStartAngle="135"
+                app:gaugeStartValue="0"
+                app:gaugeStrokeCap="ROUND"
+                app:gaugeStrokeColor="#888888"
+                app:gaugeStrokeWidth="10dp"
+                app:gaugeSweepAngle="270" />
+
+            <LinearLayout
+                android:orientation="vertical"
+                android:layout_above="@id/batt_gauge"
+                android:layout_alignParentEnd="true"
+                android:layout_marginEnd="42dp"
+                android:layout_marginBottom="-130dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:id="@+id/batt_gauge_value"
+                    android:layout_above="@+id/batt_gauge"
+                    android:text="@{Integer.toString((int)carData.motorVoltage)}"
+                    android:textSize="50dp"
+                    android:layout_width="115dp"
+                    android:gravity="end"
+                    android:layout_height="wrap_content"/>
+
+                <TextView
+                    android:text="Volts"
+                    android:textSize="12dp"
+                    android:layout_gravity="end"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+                <TextView
+                    android:text="BATTERY"
+                    android:textSize="12dp"
+                    android:layout_gravity="end"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+        </RelativeLayout>
+
+        <Button
+            android:id="@+id/log_button"
+            android:layout_width="wrap_content"
+            android:layout_height="50dp"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentLeft="true"
+            android:text="@string/start_logging"/>
+
+        <Button
+            android:id="@+id/aux_button"
+            android:layout_width="wrap_content"
+            android:layout_height="50dp"
+            android:layout_alignParentBottom="true"
+            android:layout_toRightOf="@id/log_button"
+            android:text="Aux Data"/>
+
+
+    </RelativeLayout>
+</layout>
